@@ -1,3 +1,5 @@
+## Spotify To Youtube Music importer
+
 1. Install dependencies
    On Arch
    ```bash
@@ -10,3 +12,5 @@
 5. Edit the script and add your client id and the secret
 6. Copy playlist link from Spotify (remove the start of the link, leave only the part after last / )
 7. Script should work as expected
+
+Made this since I didn't want to pay for Soundiiz lol
