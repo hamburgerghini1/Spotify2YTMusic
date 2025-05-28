@@ -1,5 +1,7 @@
 ## Spotify To Youtube Music importer
 
+The script is for Linux, but I don't see why it wouldn't work on macOS or Windows too
+
 1. Install dependencies
    On Arch
    ```bash
