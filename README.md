@@ -13,6 +13,7 @@
 5. Create Spotify Dev application at [Spotify for Developers](https://developer.spotify.com) (I named it Spo2YTM)
 6. Edit the script and add your client id and the secret
 7. Copy playlist link from Spotify (remove the start of the link, leave only the part after last / )
+   Remove the ones I left there for reference
 8. Script should work as expected
 
 Made this since I didn't want to pay for Soundiiz lol
