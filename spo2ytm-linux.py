@@ -5,15 +5,15 @@ from ytmusicapi import YTMusic
 import time
 
 # ==== CONFIGURATION ====
-SPOTIFY_CLIENT_ID = 'ADD CLIENT ID'
-SPOTIFY_CLIENT_SECRET = 'ADD SECRET'
+SPOTIFY_CLIENT_ID = '611e3fd2f8334d7bb1dac3e92659c0af'
+SPOTIFY_CLIENT_SECRET = '02226c8690ba47db878a19a5d4021e2d'
 SPOTIFY_PLAYLIST_IDS = [
     '2vGpb57Gz7NRWHt36hpYbU?si=ee0ccf4ee05046a7',
-    '1AqQ7WEqXh2BjIlpz8BfRK?si=d55a7eccffce40d5',
     '13LVS087SqIOGCFpBrQoRj?si=5b3b1a58e030452e',
     '2ifueVAh9zoXqrnMkbPBHF?si=bc3d8e57e5f340bd',
     '02Bs9GDvTGT6KJCToFiwEE?si=a39dafb37025467c',
-    '6Hqa9Sn48xKH0RKjGkwh6R?si=bcda3c51d66d4a4e'
+    '6Hqa9Sn48xKH0RKjGkwh6R?si=bcda3c51d66d4a4e',
+    '176aQaRwOaxlp7HPirgE6E?si=f63726034c2c490e',
 ]
 YTM_HEADERS_FILE = 'headers_auth.json'
 PLAYLIST_NAME_PREFIX = 'Imported: '
@@ -34,49 +34,48 @@ print("✅ YouTube Music authentication successful.")
 
 # Fetch playlist tracks from Spotify
 def fetch_spotify_tracks(playlist_id):
-    print(f"📥 Fetching tracks from Spotify playlist {playlist_id}...")
+    print("📥 Fetching tracks from Spotify...")
     results = sp.playlist_tracks(playlist_id)
     tracks = results['items']
     while results['next']:
         results = sp.next(results)
         tracks.extend(results['items'])
-    track_list = [{
-        'title': item['track']['name'],
-        'artist': item['track']['artists'][0]['name']
-    } for item in tracks]
-    print(f"🎵 Found {len(track_list)} tracks in Spotify playlist.")
-    return track_list
+
+    track_data = []
+    for item in tracks:
+        name = item['track']['name']
+        artist = item['track']['artists'][0]['name']
+        print(f"🎵 Found: {name} - {artist}")
+        track_data.append({'title': name, 'artist': artist})
+    return track_data
 
 # Search and add to YouTube Music playlist
 def import_to_ytmusic(tracks, playlist_name):
-    print(f"🎯 Creating YouTube Music playlist: {playlist_name}")
+    print(f"\n📀 Creating YT Music playlist: {playlist_name}")
     playlist_id = ytmusic.create_playlist(playlist_name, 'Imported from Spotify')
-    print(f"✅ Created YTMusic playlist with ID: {playlist_id}")
+    print(f"✅ Created playlist with ID: {playlist_id}")
 
-    video_ids = []
-    for i, t in enumerate(tracks, start=1):
+    for t in tracks:
         query = f"{t['title']} {t['artist']}"
-        print(f"[{i}/{len(tracks)}] 🔍 Searching YTMusic for: {query}")
+        print(f"🔍 Searching: {query}")
         search_results = ytmusic.search(query, filter='songs')
         if search_results:
             video_id = search_results[0]['videoId']
-            print(f"   🎧 Found match: {search_results[0]['title']} by {search_results[0]['artists'][0]['name']}")
-            video_ids.append(video_id)
+            print(f"🎧 Match: https://music.youtube.com/watch?v={video_id}")
+            try:
+                ytmusic.add_playlist_items(playlist_id, [video_id])
+                print(f"   ✅ Added: {t['title']} by {t['artist']}")
+            except Exception as e:
+                print(f"   ❌ Failed to add {video_id}: {e}")
         else:
-            print(f"   ❌ No match found on YouTube Music for: {query}")
-        time.sleep(0.5)  # Avoid rate-limiting
-
-    if video_ids:
-        print(f"➕ Adding {len(video_ids)} tracks to the YouTube Music playlist...")
-        ytmusic.add_playlist_items(playlist_id, video_ids)
-        print(f"✅ Successfully added {len(video_ids)} tracks to '{playlist_name}'")
-    else:
-        print("⚠️ No songs could be added (no matches found).")
+            print(f"   ❌ Not found: {query}")
+        time.sleep(0.5)
 
 # Main process
 for playlist_url in SPOTIFY_PLAYLIST_IDS:
     playlist_id = playlist_url.split("?")[0]
-    print(f"\n=== 🚀 Processing Spotify Playlist: {playlist_id} ===")
+
+    print(f"\n--- Processing playlist: {playlist_id} ---")
     try:
         playlist_info = sp.playlist(playlist_id)
         playlist_name = PLAYLIST_NAME_PREFIX + playlist_info['name']
