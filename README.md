@@ -2,6 +2,8 @@
 
 Linux script of Spo2Ytm is tested, but windows version and both Ytm2Spo scripts are not.
 
+Made with ChatGPT, I'm not liable for errors etc
+
 1. Install dependencies
    On Arch
    ```bash
