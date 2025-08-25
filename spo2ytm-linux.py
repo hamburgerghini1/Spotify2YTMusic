@@ -5,6 +5,8 @@ import spotipy
 from ytmusicapi import YTMusic
 import time
 import os
+import csv
+from datetime import datetime
 
 # ==== CONFIGURATION ====
 SPOTIFY_CLIENT_ID = 'add id'
@@ -82,7 +84,6 @@ except Exception as e:
     print("3. Follow the prompts to generate new credentials")
     sys.exit(1)
 
-# Fetch playlist tracks from Spotify
 def fetch_spotify_tracks(playlist_id):
     print("📥 Fetching tracks from Spotify...")
     results = sp.playlist_tracks(playlist_id)
@@ -99,10 +100,11 @@ def fetch_spotify_tracks(playlist_id):
         track_data.append({'title': name, 'artist': artist})
     return track_data
 
-# Search and add to YouTube Music playlist
 def import_to_ytmusic(tracks, playlist_name):
-    global ytmusic  # Move global declaration to top of function
+    global ytmusic
     print(f"\n📀 Creating YT Music playlist: {playlist_name}")
+    
+    missing_tracks = []
     
     # Try to create playlist with retry
     max_retries = 3
@@ -116,7 +118,6 @@ def import_to_ytmusic(tracks, playlist_name):
                 print("❌ Authentication error detected")
                 if attempt < max_retries - 1:
                     print(f"Attempting to refresh authentication (attempt {attempt + 1}/{max_retries})...")
-                    # Re-initialize YTMusic
                     ytmusic = YTMusic(YTM_HEADERS_FILE)
                     continue
                 else:
@@ -148,15 +149,34 @@ def import_to_ytmusic(tracks, playlist_name):
                         print("❌ Authentication error. Please re-run the script.")
                         raise
                     print(f"   ❌ Failed to add {video_id}: {e}")
+                    missing_tracks.append({'title': t['title'], 'artist': t['artist'], 'reason': f'Failed to add: {str(e)}'})
             else:
                 print(f"   ❌ Not found: {query}")
+                missing_tracks.append({'title': t['title'], 'artist': t['artist'], 'reason': 'Not found in YouTube Music'})
         except Exception as e:
             print(f"   ❌ Error processing {query}: {e}")
-        time.sleep(1)  # Increased delay between requests
+            missing_tracks.append({'title': t['title'], 'artist': t['artist'], 'reason': f'Error: {str(e)}'})
+        time.sleep(1)
+
+    # Create CSV file for missing tracks
+    if missing_tracks:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        csv_filename = f'missing_tracks_{timestamp}.csv'
+        try:
+            with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=['title', 'artist', 'reason'])
+                writer.writeheader()
+                writer.writerows(missing_tracks)
+            print(f"\n📝 Created CSV file with {len(missing_tracks)} missing tracks: {csv_filename}")
+        except Exception as e:
+            print(f"❌ Failed to create CSV file: {e}")
     
     print(f"\n✅ Import complete! Successfully added {success_count} of {len(tracks)} tracks")
 
 # Main process
+if len(sys.argv) < 2:
+    print_usage()
+
 for playlist_url in sys.argv[1:]:
     playlist_id = extract_playlist_id(playlist_url)
     if not playlist_id:
