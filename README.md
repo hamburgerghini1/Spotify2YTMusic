@@ -11,13 +11,5 @@ Made with ChatGPT, I'm not liable for errors etc
    ```
    Or use pipx.
    
-3. Get your Youtube Music token [here](https://ytmusicapi.readthedocs.io/en/stable/usage.html#authenticated) (Firefox is recommended and is much easier)
-   Go to youtube music on firefox, press Ctrl-Shift-I and go to network tab and filter by /browse, click to your library or home page until you see the 
-   token
-5. Create Spotify Dev application at [Spotify for Developers](https://developer.spotify.com) (I named it Spo2YTM)
-6. Edit the script and add your client id and the secret
-7. Copy playlist link from Spotify (remove the start of the link, leave only the part after last / )
-   Remove the ones I left there for reference
-8. Script should work as expected
-
-Made this since I didn't want to pay for Soundiiz lol
+2. Run setup_oauth.py to get YT Music headers, use firefox.
+3. Run the script with and add playlists link to the end, for multiple playlists use quotes
