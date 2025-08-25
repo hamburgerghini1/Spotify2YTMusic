@@ -4,6 +4,8 @@ import time
 from ytmusicapi import YTMusic
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+import csv
+from datetime import datetime
 
 # ==== CONFIGURATION ====
 YTM_HEADERS_FILE = 'headers_auth.json'
@@ -18,8 +20,7 @@ PLAYLIST_NAME_PREFIX = 'Imported from YTMusic: '
 def check_headers_file():
     if not os.path.exists(YTM_HEADERS_FILE):
         print(f"❌ YouTube Music headers file '{YTM_HEADERS_FILE}' not found.")
-        print("Please export your YouTube Music cookies using the instructions at:")
-        print("https://ytmusicapi.readthedocs.io/en/stable/setup.html#authenticated-requests")
+        print("Use the setup_oauth.py script to create it.")
         input('Press Enter to exit.')
         sys.exit(1)
 
@@ -53,20 +54,50 @@ def main():
     sp_playlist_id = sp_playlist['id']
     print(f"✅ Created Spotify playlist: {playlist_name}")
 
+    missing_tracks = []
+    success_count = 0
+
     for t in tracks:
         query = f"{t['title']} {t['artist']}"
         print(f"🔍 Searching Spotify: {query}")
-        results = sp.search(q=query, type='track', limit=1)
-        items = results['tracks']['items']
-        if items:
-            track_id = items[0]['id']
-            sp.playlist_add_items(sp_playlist_id, [track_id])
-            print(f"   ✅ Added: {t['title']} by {t['artist']}")
-        else:
-            print(f"   ❌ Not found on Spotify: {t['title']} by {t['artist']}")
+        try:
+            results = sp.search(q=query, type='track', limit=1)
+            items = results['tracks']['items']
+            if items:
+                track_id = items[0]['id']
+                sp.playlist_add_items(sp_playlist_id, [track_id])
+                success_count += 1
+                print(f"   ✅ Added: {t['title']} by {t['artist']}")
+            else:
+                print(f"   ❌ Not found on Spotify: {t['title']} by {t['artist']}")
+                missing_tracks.append({
+                    'title': t['title'], 
+                    'artist': t['artist'],
+                    'reason': 'Not found on Spotify'
+                })
+        except Exception as e:
+            print(f"   ❌ Error processing {query}: {e}")
+            missing_tracks.append({
+                'title': t['title'], 
+                'artist': t['artist'],
+                'reason': f'Error: {str(e)}'
+            })
         time.sleep(0.5)
 
-    print("\n✅ All done!")
+    # Create CSV file for missing tracks
+    if missing_tracks:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        csv_filename = f'missing_tracks_ytm2spo_{timestamp}.csv'
+        try:
+            with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=['title', 'artist', 'reason'])
+                writer.writeheader()
+                writer.writerows(missing_tracks)
+            print(f"\n📝 Created CSV file with {len(missing_tracks)} missing tracks: {csv_filename}")
+        except Exception as e:
+            print(f"❌ Failed to create CSV file: {e}")
+
+    print(f"\n✅ Import complete! Successfully added {success_count} of {len(tracks)} tracks")
     input('Press Enter to exit.')
 
 if __name__ == "__main__":
